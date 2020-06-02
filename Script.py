@@ -5,7 +5,7 @@ import json
 from bs4 import BeautifulSoup
 
 #script variables-buffer
-searchAmount = 20
+searchAmount = 30
 
 def InputProcessingName(input):
     return input.title()
@@ -148,9 +148,12 @@ if __name__ == '__main__':
     minPrice = int(sys.argv[2])
     maxPrice = int(sys.argv[3])
     district = InputProcessingDis(sys.argv[4])
+    if district:
+        district = InputProcessingName(district)
     jsonData = {'otodom': [],
                 'olx': []}
 
+    count = 0
     with open('scriptFlats.json', 'w') as jsonFile:
         for key in data:
             for count in range(1, searchAmount + 1):
@@ -200,5 +203,7 @@ if __name__ == '__main__':
                                     hrefOutput = aTag.get('href')
                                     jsonData[key].append({currentPriceINT: hrefOutput})
                                     print(hrefOutput)
+                                    count += 1
 
         json.dump(jsonData, jsonFile, indent=2)
+        print('Found {} results'.format(count))
