@@ -2,7 +2,7 @@
 The other day my friend asked me to help him with finding a new apartment.
 That’s how this script came into existence. 
 
-The script finds links to the apartments according to your guidelines
+The script finds links to the apartments according to your guidelines.
 
 It works in Poland and supports websites such as:
 * Otodom
