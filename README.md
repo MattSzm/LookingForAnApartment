@@ -1,10 +1,8 @@
 # looking_for_an_apartment
+The other day my friend asked me to help him with finding a new apartment.
+That’s how this script came into existence. 
 
-One day, my friend asked me to help him find a new apartment.
-That's how this script came about.
-
-
-The script find links to the apartments according to your guidelines.
+The script finds links to the apartments according to your guidelines
 
 It works in Poland and supports websites such as:
 * Otodom
