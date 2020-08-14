@@ -1,4 +1,4 @@
-# looking_for_an_apartment
+# Looking for an apartment.
 The other day my friend asked me to help him with finding a new apartment.
 That’s how this script came into existence. 
 
