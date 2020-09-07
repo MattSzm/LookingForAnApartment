@@ -4,30 +4,8 @@ import re
 import json
 from bs4 import BeautifulSoup
 
-#script variables-buffer
-searchAmount = 30
 
-def InputProcessingName(input):
-    return input.title()
-
-def InputProcessingDis(input):
-    if input == "none" or input == 'None' or input == 'NONE':
-        return None
-    return input
-
-def PriceComparison(value, lowConstraint, highConstraint):
-    if not lowConstraint and not highConstraint:
-        return True
-    elif not lowConstraint and value <= highConstraint:
-        return True
-    elif not highConstraint and value >= lowConstraint:
-        return True
-    elif value >= lowConstraint and value <= highConstraint:
-        return True
-    else:
-        return False
-
-headers = {
+headers_otodom = {
     'authority': 'www.otodom.pl',
     'cache-control': 'max-age=0',
     'upgrade-insecure-requests': '1',
@@ -55,7 +33,7 @@ headers = {
     'referer': 'https://www.google.com/',
 }
 
-headers2 = {
+headers_olx = {
     'authority': 'www.olx.pl',
     'cache-control': 'max-age=0',
     'upgrade-insecure-requests': '1',
@@ -108,7 +86,7 @@ headers2 = {
               'onap=16d20595b38x5d109d2c-16-172765aa8edx191d38d9-12-1591125454; __utmb=221885126.5.10.1591123553',
 }
 
-data = {
+data_scraping = {
         'otodom':
             {'main': {
                 'tag': 'article',
@@ -123,7 +101,7 @@ data = {
                     'class': 'text-nowrap'
                 },
                 'url': 'https://www.otodom.pl/wynajem/?page={}',
-                'headers': headers
+                'headers': headers_otodom
             },
         'olx':
             {'main': {
@@ -139,71 +117,123 @@ data = {
                     'class': 'breadcrumb x-normal'
                 },
                 'url': 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/?page={}',
-                'headers': headers2
-            },}
+                'headers': headers_olx
+            },
+}
+
+
+def input_processing_name(input):
+    return input.title()
+
+
+def input_processing_dis(input):
+    if input == "none" or input == 'None' or input == 'NONE':
+        return None
+    return input
+
+
+def price_comparison(value, low_constraint, high_constraint):
+    if not low_constraint and not high_constraint:
+        return True
+    elif not low_constraint and value <= high_constraint:
+        return True
+    elif not high_constraint and value >= low_constraint:
+        return True
+    elif value >= low_constraint and value <= high_constraint:
+        return True
+    else:
+        return False
+
+
+def find_current_price(li_price_tag):
+    current_price = re.search('\s\s[[[0-9][0-9][0-9]',
+                             li_price_tag.get_text())
+    if not current_price:
+        current_price = re.search('\s[0-9]\s[0-9][0-9][0-9]',
+                                 li_price_tag.get_text())
+        if not current_price:
+            current_price = re.search('\s[0-9][0-9]\s[0-9][0-9][0-9]',
+                                     li_price_tag.get_text())
+    return current_price
+
+
+def find_href(article):
+    a_tag = article.find('a')
+    href = a_tag.get('href')
+    return href
+
+
+def find_all_articles(soup_object, scraping_params):
+    if scraping_params['main']['class']:
+        articles = soup_object.find_all(scraping_params['main']['tag'],
+                                     class_= scraping_params['main']['class'])
+    else:
+        articles = soup_object.find_all(scraping_params['main']['tag'])
+    return articles
+
+
+def find_district_tag(article, data, key):
+    district_tag = None
+    if key == 'otodom':
+        district_tag = article.find(data[key]['district']['tag'],
+                        class_=data[key]['district']['class'])
+    elif key == 'olx':
+        district_tag = article.find_all(data[key]['district']['tag'],
+                        class_=data[key]['district']['class'])[1].find('span')
+    return district_tag
+
+
+def create_soup_object(scraping_params, count):
+    response = requests.get(scraping_params['url'].format(count),
+                            headers=scraping_params['headers'])
+    return BeautifulSoup(response.content, 'html.parser')
+
+
+def find_with_given_data(data, memory):
+    counter = 0
+    for key in data.keys():
+        for count in range(1, search_amount + 1):
+            #request-processing
+            soup = create_soup_object(data[key], count)
+            all_articles = find_all_articles(soup, data[key])
+            for single_article in all_articles:
+                single_article_text = single_article.prettify()
+                if city in single_article_text:
+                    #Rent-processing
+                    li_price_tag = single_article.find(data[key]['price']['tag'],
+                                                    class_=data[key]['price']['class'])
+                    current_price = find_current_price(li_price_tag)
+                    if current_price:
+                        current_price_int = int(current_price.group(0).replace(' ',''))
+                        if price_comparison(current_price_int, min_price, max_price):
+                            #District-processing
+                            district_tag = find_district_tag(single_article, data, key)
+                            current_district = re.search('(?<={},\s)\w+'.format(city),
+                                                        district_tag.get_text())
+                            if not district or (
+                                    current_district and
+                                    district == current_district.group(0).strip()):
+                                # final url
+                                href_output = find_href(single_article)
+                                print(href_output)
+                                memory[key].append({current_price_int: href_output})
+                                counter += 1
+    print(f'Found {counter} results')
 
 
 if __name__ == '__main__':
-    city = InputProcessingName(sys.argv[1])
-    minPrice = int(sys.argv[2])
-    maxPrice = int(sys.argv[3])
-    district = InputProcessingDis(sys.argv[4])
+    city = input_processing_name(sys.argv[1])
+    min_price = int(sys.argv[2])
+    max_price = int(sys.argv[3])
+    district = input_processing_dis(sys.argv[4])
     if district:
-        district = InputProcessingName(district)
-    jsonData = {'otodom': [],
-                'olx': []}
+        district = input_processing_name(district)
+    # script variables-buffer
+    search_amount = int(sys.argv[5])
 
-    count = 0
-    with open('scriptFlats.json', 'w') as jsonFile:
-        for key in data:
-            for count in range(1, searchAmount + 1):
-                #request-processing
-                response = requests.get(data[key]['url'].format(count),
-                                        headers=data[key]['headers'])
-                soup = BeautifulSoup(response.content, 'html.parser')
+    found_data_to_json = {'otodom': [],
+                            'olx': []}
+    find_with_given_data(data_scraping, found_data_to_json)
 
-                if data[key]['main']['class']:
-                    allArticles = soup.find_all(data[key]['main']['tag'],
-                                                class_=data[key]['main']['class'])
-                else:
-                    allArticles = soup.find_all(data[key]['main']['tag'])
-
-                for singleArticle in allArticles:
-                    singleArticleText = singleArticle.prettify()
-                    if city in singleArticleText:
-
-                        #Rent-processing
-                        liPriceTag = singleArticle.find(data[key]['price']['tag'],
-                                                        class_=data[key]['price']['class'])
-                        currentPrice = re.search('\s\s[[[0-9][0-9][0-9]',
-                                                 liPriceTag.get_text())
-                        if not currentPrice:
-                            currentPrice = re.search('\s[0-9]\s[0-9][0-9][0-9]',
-                                                     liPriceTag.get_text())
-                            if not currentPrice:
-                                currentPrice = re.search('\s[0-9][0-9]\s[0-9][0-9][0-9]',
-                                                         liPriceTag.get_text())
-                        if currentPrice:
-                            currentPriceINT = int(currentPrice.group(0).replace(' ',''))
-                            if PriceComparison(currentPriceINT, minPrice, maxPrice):
-
-                                #District-processing
-                                if key == 'otodom':
-                                    DistrictTag = singleArticle.find(data[key]['district']['tag'],
-                                                            class_=data[key]['district']['class'])
-                                elif key == 'olx':
-                                    DistrictTag = singleArticle.find_all(data[key]['district']['tag'],
-                                                class_=data[key]['district']['class'])[1].find('span')
-
-                                currentDistrict = re.search('(?<={},\s)\w+'.format(city),
-                                                            DistrictTag.get_text())
-                                if not district or district == currentDistrict.group(0).strip():
-                                    #final url
-                                    aTag = singleArticle.find('a')
-                                    hrefOutput = aTag.get('href')
-                                    jsonData[key].append({currentPriceINT: hrefOutput})
-                                    print(hrefOutput)
-                                    count += 1
-
-        json.dump(jsonData, jsonFile, indent=2)
-        print('Found {} results'.format(count))
+    with open('scriptFlats.json', 'w') as json_file:
+        json.dump(found_data_to_json, json_file, indent=2)
