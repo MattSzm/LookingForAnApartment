@@ -25,5 +25,6 @@ Script.py warszawa 1000 3000 praga 50
 
 The Script also creates JSON file with last search results.
 
+![](media-readMe/gif1.gif)
 
 [bslink]:https://www.crummy.com/software/BeautifulSoup/bs4/doc/
