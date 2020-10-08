@@ -215,9 +215,10 @@ def find_with_given_data(data, memory):
                                     district == current_district.group(0).strip()):
                                 # final url
                                 href_output = find_href(single_article)
-                                print(href_output)
-                                memory.append({current_price_int: href_output})
-                                counter += 1
+                                if href_output not in memory:
+                                    print(href_output)
+                                    counter += 1
+                                    memory[href_output] = current_price_int
     print(f'Found {counter} results')
 
 
@@ -232,7 +233,7 @@ if __name__ == '__main__':
     # script variables-buffer
     search_amount = int(sys.argv[5])
 
-    found_data_to_json = []
+    found_data_to_json = {}
     find_with_given_data(data_scraping, found_data_to_json)
 
     with open('scriptFlats.json', 'w') as json_file:

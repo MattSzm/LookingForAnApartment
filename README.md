@@ -23,7 +23,7 @@ Your input should contain:
 Script.py warszawa 1000 3000 praga 50
 ```
 
-The Script also creates JSON file with last search results.
+The Script also creates JSON file with search results.
 
 ![](media-readMe/gif1.gif)
 
