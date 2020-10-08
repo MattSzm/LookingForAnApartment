@@ -124,7 +124,7 @@ data_scraping = {
 }
 
 main_counter = 0
-last_found = None
+
 
 def input_processing_name(input):
     return input.title()
@@ -169,7 +169,6 @@ def find_all_articles(soup_object, scraping_params):
 
 def search_single_page(data, memory, key, all_articles):
     global main_counter
-    global last_found
     for single_article in all_articles:
         single_article_text = single_article.prettify()
         if city in single_article_text:
@@ -189,11 +188,10 @@ def search_single_page(data, memory, key, all_articles):
                             district == current_district.group(0).strip()):
                         # final url
                         href_output = find_href(single_article)
-                        if href_output != last_found:
+                        if href_output not in memory:
                             print(href_output)
-                            memory[key].append({current_price_int: href_output})
                             main_counter += 1
-                            last_found = href_output
+                            memory[href_output] = current_price_int
 
 
 def price_comparison(value, low_constraint, high_constraint):
@@ -250,8 +248,7 @@ if __name__ == '__main__':
     # script variables-buffer
     search_amount = int(sys.argv[5])
 
-    found_data_to_json = {'otodom': [],
-                            'olx': []}
+    found_data_to_json = {}
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(find_with_given_data(data_scraping, found_data_to_json))
