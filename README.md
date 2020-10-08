@@ -12,7 +12,7 @@ It works in Poland and supports websites such as:
 but it's fully ready to add more websites in future.
 
 Your input should contain:
-* Name of city
+* Name of city  
 * Lower limit
 * Upper limit
 * District (this one can be omitted - just write none)

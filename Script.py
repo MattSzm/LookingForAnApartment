@@ -1,8 +1,10 @@
 import sys
-import requests
 import re
 import json
 from bs4 import BeautifulSoup
+import aiohttp
+import asyncio
+import time
 
 
 headers_otodom = {
@@ -121,6 +123,8 @@ data_scraping = {
             },
 }
 
+main_counter = 0
+last_found = None
 
 def input_processing_name(input):
     return input.title()
@@ -130,6 +134,66 @@ def input_processing_dis(input):
     if input == "none" or input == 'None' or input == 'NONE':
         return None
     return input
+
+
+async def find_with_given_data(data, memory):
+    coros = [manage_single_page(data, memory, key, count)
+             for key in data.keys()
+             for count in range(1, search_amount+1)]
+    await asyncio.gather(*coros)
+    print(f'Found {main_counter} results')
+
+
+async def manage_single_page(data, memory, key, count):
+    soup = await create_soup_object(data[key], count)
+    all_articles = find_all_articles(soup, data[key])
+    search_single_page(data, memory, key, all_articles)
+
+
+async def create_soup_object(scraping_params, count):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(scraping_params['url'].format(count),
+                        headers=scraping_params['headers']) as response:
+            content = await response.text()
+    return BeautifulSoup(content, 'html.parser')
+
+
+def find_all_articles(soup_object, scraping_params):
+    if scraping_params['main']['class']:
+        articles = soup_object.find_all(scraping_params['main']['tag'],
+                                     class_= scraping_params['main']['class'])
+    else:
+        articles = soup_object.find_all(scraping_params['main']['tag'])
+    return articles
+
+
+def search_single_page(data, memory, key, all_articles):
+    global main_counter
+    global last_found
+    for single_article in all_articles:
+        single_article_text = single_article.prettify()
+        if city in single_article_text:
+            # Rent-processing
+            li_price_tag = single_article.find(data[key]['price']['tag'],
+                                               class_=data[key]['price']['class'])
+            current_price = find_current_price(li_price_tag)
+            if current_price:
+                current_price_int = int(current_price.group(0).replace(' ', ''))
+                if price_comparison(current_price_int, min_price, max_price):
+                    # District-processing
+                    district_tag = find_district_tag(single_article, data, key)
+                    current_district = re.search('(?<={},\s)\w+'.format(city),
+                                                 district_tag.get_text())
+                    if not district or (
+                            current_district and
+                            district == current_district.group(0).strip()):
+                        # final url
+                        href_output = find_href(single_article)
+                        if href_output != last_found:
+                            print(href_output)
+                            memory[key].append({current_price_int: href_output})
+                            main_counter += 1
+                            last_found = href_output
 
 
 def price_comparison(value, low_constraint, high_constraint):
@@ -163,15 +227,6 @@ def find_href(article):
     return href
 
 
-def find_all_articles(soup_object, scraping_params):
-    if scraping_params['main']['class']:
-        articles = soup_object.find_all(scraping_params['main']['tag'],
-                                     class_= scraping_params['main']['class'])
-    else:
-        articles = soup_object.find_all(scraping_params['main']['tag'])
-    return articles
-
-
 def find_district_tag(article, data, key):
     district_tag = None
     if key == 'otodom':
@@ -183,45 +238,9 @@ def find_district_tag(article, data, key):
     return district_tag
 
 
-def create_soup_object(scraping_params, count):
-    response = requests.get(scraping_params['url'].format(count),
-                            headers=scraping_params['headers'])
-    return BeautifulSoup(response.content, 'html.parser')
-
-
-def find_with_given_data(data, memory):
-    counter = 0
-    for key in data.keys():
-        for count in range(1, search_amount + 1):
-            #request-processing
-            soup = create_soup_object(data[key], count)
-            all_articles = find_all_articles(soup, data[key])
-            for single_article in all_articles:
-                single_article_text = single_article.prettify()
-                if city in single_article_text:
-                    #Rent-processing
-                    li_price_tag = single_article.find(data[key]['price']['tag'],
-                                                    class_=data[key]['price']['class'])
-                    current_price = find_current_price(li_price_tag)
-                    if current_price:
-                        current_price_int = int(current_price.group(0).replace(' ',''))
-                        if price_comparison(current_price_int, min_price, max_price):
-                            #District-processing
-                            district_tag = find_district_tag(single_article, data, key)
-                            current_district = re.search('(?<={},\s)\w+'.format(city),
-                                                        district_tag.get_text())
-                            if not district or (
-                                    current_district and
-                                    district == current_district.group(0).strip()):
-                                # final url
-                                href_output = find_href(single_article)
-                                print(href_output)
-                                memory[key].append({current_price_int: href_output})
-                                counter += 1
-    print(f'Found {counter} results')
-
 
 if __name__ == '__main__':
+    start_time = time.time()
     city = input_processing_name(sys.argv[1])
     min_price = int(sys.argv[2])
     max_price = int(sys.argv[3])
@@ -233,7 +252,13 @@ if __name__ == '__main__':
 
     found_data_to_json = {'otodom': [],
                             'olx': []}
-    find_with_given_data(data_scraping, found_data_to_json)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(find_with_given_data(data_scraping, found_data_to_json))
+    loop.close()
 
     with open('scriptFlats.json', 'w') as json_file:
         json.dump(found_data_to_json, json_file, indent=2)
+
+    execution_time = time.time() - start_time
+    print(f'runtime: {execution_time}')
