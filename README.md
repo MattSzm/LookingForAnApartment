@@ -11,6 +11,11 @@ It works in Poland and supports websites such as:
 
 but it's fully ready to add more websites in future.
 
+#### Concurrent version
+This branch contain concurrent version which decrease the runtime.
+I made use of asyncio library and async/await keywords added in Python 3.5.
+As a result, the boost of efficiency is insane. 
+
 Your input should contain:
 * Name of city  
 * Lower limit
