@@ -28,7 +28,7 @@ The Script also creates JSON file with search results.
 ###
 All additional extensions and packages can be found in 'requirements.txt'.
 
-#### Concurrent version
+### Concurrent version
 This branch contain concurrent version which decrease the runtime.
 I made use of asyncio library and async/await keywords added in Python 3.5.
 As a result, the boost of efficiency is insane. 
