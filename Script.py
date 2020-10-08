@@ -3,7 +3,7 @@ import requests
 import re
 import json
 from bs4 import BeautifulSoup
-
+import time
 
 headers_otodom = {
     'authority': 'www.otodom.pl',
@@ -216,12 +216,13 @@ def find_with_given_data(data, memory):
                                 # final url
                                 href_output = find_href(single_article)
                                 print(href_output)
-                                memory[key].append({current_price_int: href_output})
+                                memory.append({current_price_int: href_output})
                                 counter += 1
     print(f'Found {counter} results')
 
 
 if __name__ == '__main__':
+    start_time = time.time()
     city = input_processing_name(sys.argv[1])
     min_price = int(sys.argv[2])
     max_price = int(sys.argv[3])
@@ -231,9 +232,11 @@ if __name__ == '__main__':
     # script variables-buffer
     search_amount = int(sys.argv[5])
 
-    found_data_to_json = {'otodom': [],
-                            'olx': []}
+    found_data_to_json = []
     find_with_given_data(data_scraping, found_data_to_json)
 
     with open('scriptFlats.json', 'w') as json_file:
         json.dump(found_data_to_json, json_file, indent=2)
+
+    execution_time = time.time() - start_time
+    print(f'runtime: {execution_time}')
