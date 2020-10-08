@@ -11,11 +11,6 @@ It works in Poland and supports websites such as:
 
 but it's fully ready to add more websites in future.
 
-#### Concurrent version
-This branch contain concurrent version which decrease the runtime.
-I made use of asyncio library and async/await keywords added in Python 3.5.
-As a result, the boost of efficiency is insane. 
-
 Your input should contain:
 * Name of city  
 * Lower limit
@@ -33,6 +28,16 @@ The Script also creates JSON file with search results.
 ###
 All additional extensions and packages can be found in 'requirements.txt'.
 
+#### Concurrent version
+This branch contain concurrent version which decrease the runtime.
+I made use of asyncio library and async/await keywords added in Python 3.5.
+As a result, the boost of efficiency is insane. 
+###
+The execution times of simple call with search buffer set on 100 are:
+* classic - 203 seconds
+* concurrent - 53 seconds
+
+###
 ![](media-readMe/gif1.gif)
 
 [bslink]:https://www.crummy.com/software/BeautifulSoup/bs4/doc/
