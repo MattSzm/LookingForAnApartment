@@ -126,6 +126,15 @@ data_scraping = {
 main_counter = 0
 
 
+def run():
+    found_data_to_json = {}
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(find_with_given_data(data_scraping, found_data_to_json))
+    loop.close()
+    with open('scriptFlats.json', 'w') as json_file:
+        json.dump(found_data_to_json, json_file, indent=2)
+
+
 def input_processing_name(input):
     return input.title()
 
@@ -247,15 +256,6 @@ if __name__ == '__main__':
         district = input_processing_name(district)
     # script variables-buffer
     search_amount = int(sys.argv[5])
-
-    found_data_to_json = {}
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(find_with_given_data(data_scraping, found_data_to_json))
-    loop.close()
-
-    with open('scriptFlats.json', 'w') as json_file:
-        json.dump(found_data_to_json, json_file, indent=2)
-
+    run()
     execution_time = time.time() - start_time
-    print(f'runtime: {execution_time}')
+    print(f'Runtime: {execution_time}s')
