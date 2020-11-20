@@ -140,7 +140,7 @@ def input_processing_name(input):
 
 
 def input_processing_dis(input):
-    if input == "none" or input == 'None' or input == 'NONE':
+    if input.lower() == "none":
         return None
     return input
 

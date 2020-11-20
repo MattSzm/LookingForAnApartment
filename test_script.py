@@ -9,10 +9,10 @@ from Script import (
 
 
 class TestInputProcessingName:
-    def test_input_processing_name_successfels(self):
-        assert input_processing_name("warszawa") == "Warszawa"
-        assert input_processing_name("Warszawa") == "Warszawa"
-        assert input_processing_name("WARSZAWa") == "Warszawa"
+    @pytest.mark.parametrize("input",
+                    ["warszawa", "Warszawa", "WARSZAWa"])
+    def test_input_processing_name_success(self, input):
+        assert input_processing_name(input) == "Warszawa"
 
     def test_input_processing_name_fail(self):
         with pytest.raises(AttributeError):
@@ -20,27 +20,35 @@ class TestInputProcessingName:
 
 
 class TestPriceComparison:
-    def test_price_comparison_success(self):
-        assert price_comparison(10, None, None)
-        assert price_comparison(15, None, 15)
-        assert price_comparison(20, 19, None)
-        assert price_comparison(20, 18 ,22)
-        assert price_comparison(20, 20, 20)
-        assert not price_comparison(18, 13, 16)
+    @pytest.mark.parametrize("input",
+                             [(10, None, None), (15, None, 15),
+                              (20, 19, None),(20, 18 ,22),
+                              (20, 20, 20)])
+    def test_price_comparison_success(self, input):
+        assert price_comparison(*input)
 
     def test_price_comparison_fail(self):
         with pytest.raises(TypeError):
             price_comparison(None, 10, 20)
 
+    def test_price_comparison_fail_2(self):
+        assert not price_comparison(18, 13, 16)
 
-def test_input_processing_dis():
-    assert input_processing_dis("wola") == "wola"
-    assert input_processing_dis("none") is None
-    assert input_processing_dis("None") is None
+
+class TestInputProcessingDis:
+    def test_with_dis(self):
+        assert input_processing_dis("wola") == "wola"
+
+    @pytest.mark.parametrize("input",
+                        ["none", "None", "NONE", "noNe"])
+    def test_without_dis(self, input):
+        assert input_processing_dis(input) is None
 
 
 class TestMainFunction:
-    result = subprocess.check_output("Script.py warszawa 0 10000 none 2",
+    low_price = 1000
+    high_price = 4000
+    result = subprocess.check_output(f"Script.py warszawa {low_price} {high_price} none 3",
                                      shell=True, text=True)
     lines = result.split('\n')
     length = len(lines)
@@ -72,13 +80,6 @@ class TestMainFunction:
             r'\d+\.\d+'
             r's$')
         assert re.match(regex, self.lines[-2])
-
-
-class TestJsonResults:
-    low_price = 1000
-    high_price = 4000
-    result = subprocess.check_output(f"Script.py warszawa {low_price} {high_price} none 2",
-                                     shell=True, text=True)
 
     def test_price(self):
         with open('scriptFlats.json', 'r') as json_file:
